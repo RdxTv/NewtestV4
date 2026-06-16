@@ -5,7 +5,7 @@ import json
 from aiohttp import web
 from bson.objectid import ObjectId
 from utils import temp, get_size
-from info import BIN_CHANNEL, MAX_WEB_RESULTS
+from info import BIN_CHANNEL
 from database.ia_filterdb import actors, get_actor_search_results
 from web.web_assets import build_page, get_auth, form_wrapper
 
@@ -62,7 +62,7 @@ async def actors_directory_page(req):
     return build_page("Actors Directory - Fast Finder", page_body, "", "actors", role)
 
 # ─────────────────────────────────────────────────────────
-# 🎭 ADMIN VIEW: CREATE ACTOR PROFILE PAGE FORM (WITH TAGS)
+# 🎭 ADMIN VIEW: CREATE ACTOR PROFILE PAGE FORM
 # ─────────────────────────────────────────────────────────
 @actor_routes.get('/admin/create_actor')
 async def create_actor_page(req):
@@ -132,7 +132,7 @@ async def api_create_actor(req):
         return web.HTTPFound(f'/admin/create_actor?err=Server Error: {str(e)}')
 
 # ─────────────────────────────────────────────────────────
-# 🖼️ ZERO-RAM GENERAL PHOTO ENGINE (Koyeb Crash Proof)
+# 🖼️ ZERO-RAM GENERAL PHOTO ENGINE
 # ─────────────────────────────────────────────────────────
 @actor_routes.get('/api/actor/photo')
 async def get_actor_photo(req):
@@ -209,7 +209,7 @@ async def actor_profile_display(req):
         </div>
         '''
     if not gallery_list:
-        gallery_grid_html += '<div style="color:var(--muted); text-align:center; padding:40px;">🖼️ Gallery is empty. Upload images to show here.</div>'
+        gallery_grid_html += '<div style="color:var(--muted); text-align:center; padding:40px;"> 🖼️ Gallery is empty. Upload images to show here.</div>'
     else:
         gallery_grid_html += '<div class="gallery-grid">'
         for i in range(len(gallery_list)):
@@ -219,7 +219,20 @@ async def actor_profile_display(req):
     admin_edit_btn = f'<button onclick="openActorEditModal()" style="background:var(--bg4); border:1px solid var(--border); color:var(--text); padding:8px 16px; border-radius:6px; font-size:12px; font-weight:700; cursor:pointer; margin-top:10px; align-self:flex-start;">✏️ Edit Profile & Socials</button>' if role == 'admin' else ""
     tags_json_payload = json.dumps(tags_list)
 
+    # ✅ सिंटैक्स फिक्स: यहाँ CSS और स्क्रिप्ट को बिना f-string के टकराव के बिल्कुल शुद्ध रूप से रेंडर किया गया है
     tab_engine_ui = f'''
+    <style>
+        .actor-tab-bar {{ display: flex; gap: 10px; border-bottom: 2px solid var(--border); margin-bottom: 25px; }}
+        .actor-tab {{ background: transparent; border: none; color: var(--muted); padding: 12px 20px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; position: relative; font-family: inherit; }}
+        .actor-tab.active {{ color: var(--text) !important; }}
+        .actor-tab.active::after {{ content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: var(--accent); }}
+        .actor-panel {{ display: none; }}
+        .actor-panel.active {{ display: block !important; }}
+        .gallery-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }}
+        .gallery-item {{ width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); transition: transform 0.2s; }}
+        .gallery-item:hover {{ transform: scale(1.03); }}
+    </style>
+
     <div class="main" style="padding-top:30px; max-width:1100px; margin: 0 auto; padding-left:20px; padding-right:20px;">
         <div style="margin-bottom:15px;"><a href="/actors" style="color:var(--muted); text-decoration:none; font-size:14px; font-weight:700;">← Back to Catalog</a></div>
         
@@ -282,33 +295,33 @@ async def actor_profile_display(req):
     <input type="hidden" id="actor_master_tags_payload" value='{tags_json_payload}'>
 
     <div class="edit-modal" id="actorEditModal" onclick="if(event.target===this)closeActorEditModal()">
-        <div class="em-card" style="max-width:550px;">
-            <button class="em-close" onclick="closeActorEditModal()">&#10005;</button>
-            <div class="em-title">✏️ Edit Actor Profile Matrix</div>
+        <div class="em-card" style="max-width:550px; background: var(--card); border:1px solid var(--border); padding:25px; border-radius:12px;">
+            <button class="em-close" onclick="closeActorEditModal()" style="position:absolute; top:15px; right:20px; background:none; border:none; color:var(--muted); font-size:24px; cursor:pointer;">&#10005;</button>
+            <div class="em-title" style="font-size:18px; font-weight:700; margin-bottom:20px; color:var(--text);">✏️ Edit Actor Profile Matrix</div>
             <form action="/api/actor/update_profile" method="post">
                 <input type="hidden" name="actor_id" value="{actor_id}">
                 
                 <div class="scard-label">Actor Full Name</div>
-                <input type="text" name="name" value="{actor_name}" class="em-input" required>
+                <input type="text" name="name" value="{actor_name}" class="em-input" style="width:100%; background:var(--bg); border:1px solid var(--border); padding:12px; color:var(--text); margin-bottom:15px; border-radius:6px;" required>
                 
                 <div class="scard-label">Biography Details</div>
-                <textarea name="bio" class="em-input" style="min-height:120px; font-family:inherit; padding:10px; line-height:1.5;" required>{actor["bio"]}</textarea>
+                <textarea name="bio" class="em-input" style="width:100%; background:var(--bg); border:1px solid var(--border); min-height:120px; font-family:inherit; padding:10px; line-height:1.5; color:var(--text); margin-bottom:15px; border-radius:6px;" required>{actor["bio"]}</textarea>
                 
                 <div class="scard-label">Search Tags (Comma Separated)</div>
-                <input type="text" name="tags" value="{', '.join(tags_list)}" placeholder="e.g. SRK, Shahrukh, King Khan" class="em-input">
+                <input type="text" name="tags" value="{', '.join(tags_list)}" placeholder="e.g. SRK, Shahrukh, King Khan" class="em-input" style="width:100%; background:var(--bg); border:1px solid var(--border); padding:12px; color:var(--text); margin-bottom:15px; border-radius:6px;">
 
-                <div class="em-title" style="font-size:14px; margin-top:15px; margin-bottom:10px;">🌐 Social Media Channels Matrix</div>
+                <div class="em-title" style="font-size:14px; margin-top:15px; margin-bottom:10px; color:var(--text);">🌐 Social Media Channels Matrix</div>
                 
                 <div class="scard-label">Instagram Link</div>
-                <input type="url" name="insta" value="{social.get('instagram','')}" placeholder="https://instagram.com/..." class="em-input">
+                <input type="url" name="insta" value="{social.get('instagram','')}" placeholder="https://instagram.com/..." class="em-input" style="width:100%; background:var(--bg); border:1px solid var(--border); padding:12px; color:var(--text); margin-bottom:15px; border-radius:6px;">
                 
                 <div class="scard-label">YouTube Channel Link</div>
-                <input type="url" name="yt" value="{social.get('youtube','')}" placeholder="https://youtube.com/..." class="em-input">
+                <input type="url" name="yt" value="{social.get('youtube','')}" placeholder="https://youtube.com/..." class="em-input" style="width:100%; background:var(--bg); border:1px solid var(--border); padding:12px; color:var(--text); margin-bottom:15px; border-radius:6px;">
                 
                 <div class="scard-label">Twitter / X Profile Link</div>
-                <input type="url" name="twitter" value="{social.get('twitter','')}" placeholder="https://x.com/..." class="em-input">
+                <input type="url" name="twitter" value="{social.get('twitter','')}" placeholder="https://x.com/..." class="em-input" style="width:100%; background:var(--bg); border:1px solid var(--border); padding:12px; color:var(--text); margin-bottom:20px; border-radius:6px;">
                 
-                <button class="em-save-btn" type="submit">Save Changes & Sync Grid</button>
+                <button class="em-save-btn" type="submit" style="width:100%; background:var(--accent); color:#fff; border:none; padding:14px; font-weight:700; border-radius:6px; cursor:pointer; font-size:15px;">Save Changes & Sync Grid</button>
             </form>
         </div>
     </div>
@@ -322,6 +335,7 @@ async def actor_profile_display(req):
             for (var i = 0; i < panels.length; i++) {{ panels[i].classList.remove('active'); }}
             var tabs = document.querySelectorAll('.actor-tab');
             for (var j = 0; j < tabs.length; j++) {{ tabs[j].classList.remove('active'); }}
+            
             document.getElementById(tabId).classList.add('active');
             evt.currentTarget.classList.add('active');
             if(tabId === 'tab-video' && document.getElementById('actor_video_results').innerHTML === "") {{
@@ -378,17 +392,6 @@ async def actor_profile_display(req):
         
         document.getElementById('actor_movie_q').addEventListener('keydown', function(e) {{ if(e.key === 'Enter') {{ resetActorSearchPage(); triggerActorSearchAjax(); }} }});
     </script>
-    <style>
-        .actor-tab-bar {{ display: flex; gap: 10px; border-bottom: 2px solid var(--border); margin-bottom: 25px; }}
-        .actor-tab {{ background: transparent; border: none; color: var(--muted); padding: 12px 20px; font-size: 15px; font-weight: 700; cursor: pointer; transition: 0.2s; position: relative; font-family: inherit; }}
-        .actor-tab.active {{ color: var(--text); }}
-        .actor-tab.active::after {{ content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 2px; background: var(--accent); }}
-        .actor-panel {{ display: none; }}
-        .actor-panel.active {{ display: block; }}
-        .gallery-grid {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; }}
-        .gallery-item {{ width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); transition: transform 0.2s; }}
-        .gallery-item:hover {{ transform: scale(1.03); }}
-    </style>
     '''
     return build_page(f"{actor_name} - Profile Matrix", tab_engine_ui, "", "actors", role)
 
@@ -476,7 +479,7 @@ async def api_actor_update_profile(req):
     return web.HTTPFound(f'/actor/{actor_id}?msg=Profile and Social Networks synced successfully!')
 
 # ─────────────────────────────────────────────────────────
-# 🖼️ ADMIN API: UPLOAD NATIVE IMAGE TO GALLERY (NO RAM CACHE BLAST)
+# 🖼️ ADMIN API: UPLOAD NATIVE IMAGE TO GALLERY
 # ─────────────────────────────────────────────────────────
 @actor_routes.post('/api/actor/gallery_upload')
 async def api_actor_gallery_upload(req):
