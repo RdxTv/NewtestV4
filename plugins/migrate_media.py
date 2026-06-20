@@ -1,8 +1,9 @@
 import asyncio
 import logging
 import random
+import io
 from hydrogram import Client, filters
-from hydrogram.errors import FloodWait
+from hydrogram.errors import FloodWait, MessageNotModified
 
 # कोर डेटाबेस कलेक्शंस सिंक
 from database.ia_filterdb import actors, COLLECTIONS
@@ -17,7 +18,6 @@ async def migrate_media_cmd(client, message):
         "Scanning database collections for legacy media items."
     )
     
-    # कैटेगरी के हिसाब से ट्रैकर ताकि लाइव दिखे कि क्या-क्या ट्रांसफर हो रहा है
     stats_tracker = {
         "actor": {"profile": 0, "gallery": 0},
         "app": {"profile": 0, "gallery": 0},
@@ -27,41 +27,52 @@ async def migrate_media_cmd(client, message):
     thumb_success, thumb_skipped = 0, 0
     total_processed = 0
     
+    # Helper Function: मैसेज एडिट एरर से सुरक्षा के लिए
+    async def safe_edit_status(text):
+        try:
+            await status_msg.edit(text)
+        except MessageNotModified:
+            pass
+        except Exception:
+            pass
+
     # ─────────────────────────────────────────────────────────
     # 🎭 PHASE 1: DIRECTORY MIGRATION (ACTOR, APP, WEBSITE)
     # ─────────────────────────────────────────────────────────
     try:
-        await status_msg.edit("⏳ <b>Phase 1/2: Preparing Directory Assets (Actor / App / Website)...</b>")
+        await safe_edit_status("⏳ <b>Phase 1/2: Preparing Directory Assets (Actor / App / Website)...</b>")
         cursor = actors.find({})
         async for actor in cursor:
-            # सुरक्षित कैटेगराइजेशन फैच (डेटा मिसमैच रोकने के लिए)
             category = actor.get("category", "actor")
             if category not in stats_tracker:
-                category = "actor" # फॉलबैक
+                category = "actor"
 
-            # 1. मुख्य प्रोफाइल फोटो का ट्रांसफर (Avatar Sync)
+            # 1. मुख्य प्रोफाइल फोटो का ट्रांसफर
             p_img = actor.get("photo_url")
             if p_img and p_img.startswith("TG_ID:") and not actor.get("is_actor_permanent"):
                 raw_file_id = p_img.replace("TG_ID:", "")
                 
                 while True:
                     try:
-                        # ✅ FIX: 'media' को बदलकर 'file_id' किया गया
-                        new_msg = await client.send_cached_media(chat_id=ACTOR_STORAGE_CHANNEL, file_id=raw_file_id)
-                        if new_msg and new_msg.photo:
-                            new_file_id = new_msg.photo.sizes[-1].file_id if hasattr(new_msg.photo, "sizes") and new_msg.photo.sizes else new_msg.photo.file_id
+                        # डाउनलोड-ओनली एरर से बचने के लिए इसे BytesIO बफर के जरिए डाउनलोड करके अपलोड करेंगे
+                        file_buffer = await client.download_media(raw_file_id, in_memory=True)
+                        if file_buffer:
+                            file_buffer.seek(0)
+                            new_msg = await client.send_photo(chat_id=ACTOR_STORAGE_CHANNEL, photo=file_buffer)
                             
-                            if new_file_id:
-                                await actors.update_one(
-                                    {"_id": actor["_id"]}, 
-                                    {"$set": {"photo_url": f"TG_ID:{new_file_id}", "is_actor_permanent": True}}
-                                )
-                                stats_tracker[category]["profile"] += 1
+                            if new_msg and new_msg.photo:
+                                new_file_id = new_msg.photo.sizes[-1].file_id if hasattr(new_msg.photo, "sizes") and new_msg.photo.sizes else new_msg.photo.file_id
+                                
+                                if new_file_id:
+                                    await actors.update_one(
+                                        {"_id": actor["_id"]}, 
+                                        {"$set": {"photo_url": f"TG_ID:{new_file_id}", "is_actor_permanent": True}}
+                                    )
+                                    stats_tracker[category]["profile"] += 1
                         
                         total_processed += 1
-                        # 📢 हर 5 आइटम्स के बाद टेलीग्राम पर लाइव स्टेटस बोर्ड एडिट करें
                         if total_processed % 5 == 0:
-                            await status_msg.edit(
+                            await safe_edit_status(
                                 f"⏳ <b>Phase 1/2: Migrating Directory Hub...</b>\n\n"
                                 f"🎭 <b>Actors Profiles:</b> <code>{stats_tracker['actor']['profile']}</code> | Gallery: <code>{stats_tracker['actor']['gallery']}</code>\n"
                                 f"📱 <b>Apps Profiles:</b> <code>{stats_tracker['app']['profile']}</code> | Gallery: <code>{stats_tracker['app']['gallery']}</code>\n"
@@ -73,13 +84,12 @@ async def migrate_media_cmd(client, message):
                         break
                         
                     except FloodWait as e:
-                        logger.warning(f"FloodWait! Sleeping for {e.value + 2}s.")
                         await asyncio.sleep(e.value + 2)
                     except Exception as err:
                         logger.error(f"Directory Photo Shift Error: {err}")
                         break
 
-            # 2. लाइटबॉक्स गैलरी एरे का ट्रांसफर (Gallery Array Sync)
+            # 2. लाइटबॉक्स गैलरी एरे का ट्रांसफर
             gallery = actor.get("gallery", [])
             if gallery:
                 new_gallery = []
@@ -91,15 +101,20 @@ async def migrate_media_cmd(client, message):
                         
                         while True:
                             try:
-                                # ✅ FIX: 'media' को बदलकर 'file_id' किया गया
-                                new_msg = await client.send_cached_media(chat_id=ACTOR_STORAGE_CHANNEL, file_id=raw_g_id)
-                                if new_msg and new_msg.photo:
-                                    new_f_id = new_msg.photo.sizes[-1].file_id if hasattr(new_msg.photo, "sizes") and new_msg.photo.sizes else new_msg.photo.file_id
+                                file_buffer = await client.download_media(raw_g_id, in_memory=True)
+                                if file_buffer:
+                                    file_buffer.seek(0)
+                                    new_msg = await client.send_photo(chat_id=ACTOR_STORAGE_CHANNEL, photo=file_buffer)
                                     
-                                    if new_f_id:
-                                        new_gallery.append(f"TG_ID:{new_f_id}")
-                                        stats_tracker[category]["gallery"] += 1
-                                        has_changed = True
+                                    if new_msg and new_msg.photo:
+                                        new_f_id = new_msg.photo.sizes[-1].file_id if hasattr(new_msg.photo, "sizes") and new_msg.photo.sizes else new_msg.photo.file_id
+                                        
+                                        if new_f_id:
+                                            new_gallery.append(f"TG_ID:{new_f_id}")
+                                            stats_tracker[category]["gallery"] += 1
+                                            has_changed = True
+                                        else:
+                                            new_gallery.append(g_id)
                                     else:
                                         new_gallery.append(g_id)
                                 else:
@@ -107,7 +122,7 @@ async def migrate_media_cmd(client, message):
                                     
                                 total_processed += 1
                                 if total_processed % 5 == 0:
-                                    await status_msg.edit(
+                                    await safe_edit_status(
                                         f"⏳ <b>Phase 1/2: Migrating Directory Hub...</b>\n\n"
                                         f"🎭 <b>Actors Profiles:</b> <code>{stats_tracker['actor']['profile']}</code> | Gallery: <code>{stats_tracker['actor']['gallery']}</code>\n"
                                         f"📱 <b>Apps Profiles:</b> <code>{stats_tracker['app']['profile']}</code> | Gallery: <code>{stats_tracker['app']['gallery']}</code>\n"
@@ -136,7 +151,7 @@ async def migrate_media_cmd(client, message):
     # 🖼️ PHASE 2: MOVIE THUMBNAILS COMPONENT MIGRATION
     # ─────────────────────────────────────────────────────────
     try:
-        await status_msg.edit("⏳ <b>Phase 2/2: Opening Vault & Scanning Movie Posters...</b>")
+        await safe_edit_status("⏳ <b>Phase 2/2: Opening Vault & Scanning Movie Posters...</b>")
         for name, col in COLLECTIONS.items():
             if name == "actors": 
                 continue
@@ -150,21 +165,27 @@ async def migrate_media_cmd(client, message):
                     
                     while True:
                         try:
-                            # ✅ FIX: 'media' को बदलकर 'file_id' किया गया
-                            new_msg = await client.send_cached_media(chat_id=THUMBNAIL_STORAGE_CHANNEL, file_id=raw_thumb_id)
-                            if new_msg and new_msg.photo:
-                                new_t_id = new_msg.photo.sizes[-1].file_id if hasattr(new_msg.photo, "sizes") and new_msg.photo.sizes else new_msg.photo.file_id
+                            # ⚡ डाउनलोड-ओनली ID को इन-मेमोरी रैम बफर में डाउनलोड करें (Safe Fast Tunnel)
+                            file_buffer = await client.download_media(raw_thumb_id, in_memory=True)
+                            
+                            if file_buffer:
+                                file_buffer.seek(0)
+                                # नए स्टोरेज चैनल पर फोटो के रूप में फ्रेश अपलोड करें
+                                new_msg = await client.send_photo(chat_id=THUMBNAIL_STORAGE_CHANNEL, photo=file_buffer)
                                 
-                                if new_t_id:
-                                    await col.update_one(
-                                        {"_id": doc["_id"]}, 
-                                        {"$set": {"thumb_url": f"TG_ID:{new_t_id}", "is_thumb_permanent": True}}
-                                    )
-                                    thumb_success += 1
+                                if new_msg and new_msg.photo:
+                                    new_t_id = new_msg.photo.sizes[-1].file_id if hasattr(new_msg.photo, "sizes") and new_msg.photo.sizes else new_msg.photo.file_id
+                                    
+                                    if new_t_id:
+                                        await col.update_one(
+                                            {"_id": doc["_id"]}, 
+                                            {"$set": {"thumb_url": f"TG_ID:{new_t_id}", "is_thumb_permanent": True}}
+                                        )
+                                        thumb_success += 1
                             
                             total_processed += 1
                             if total_processed % 5 == 0:
-                                await status_msg.edit(
+                                await safe_edit_status(
                                     f"⏳ <b>Phase 2/2: Transferring Vault Posters...</b>\n\n"
                                     f"🖼️ Thumbnails Moved: <code>{thumb_success}</code>\n"
                                     f"⚠️ Skipped/Permanent: <code>{thumb_skipped}</code>\n"
@@ -175,7 +196,6 @@ async def migrate_media_cmd(client, message):
                             break
                             
                         except FloodWait as e:
-                            logger.warning(f"FloodWait in Thumbnail! Sleeping for {e.value + 2}s.")
                             await asyncio.sleep(e.value + 2)
                         except Exception as e:
                             logger.error(f"Thumbnail Migration Failed: {e}")
@@ -194,7 +214,7 @@ async def migrate_media_cmd(client, message):
         f"🌐 <b>Websites:</b> <code>{stats_tracker['website']['profile']} Profiles</code> | <code>{stats_tracker['website']['gallery']} Gallery</code>\n"
         f"🖼️ <b>Thumbnails Synced:</b> <code>{thumb_success} Movie Posters</code>\n"
         f"⚠️ <b>Skipped / Clean:</b> <code>{thumb_skipped} Files</code>\n\n"
-        "⚡ <i>All assets safely isolated into separate channels without any data mismatch error!</i>\n"
+        "⚡ <i>All assets safely isolated into separate channels via In-Memory upload pipeline!</i>\n"
         "💡 <u>Tip:</u> अब आप इस <code>migrate_media.py</code> फाइल को डिलीट कर सकते हैं।"
     )
-    await status_msg.edit(report)
+    await safe_edit_status(report)
