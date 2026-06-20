@@ -6,7 +6,7 @@ import gc
 import logging
 from hydrogram import Client, filters
 from hydrogram.errors import FloodWait, MessageNotModified, BadRequest
-from info import ADMINS, BIN_CHANNEL
+from info import ADMINS, BIN_CHANNEL, THUMBNAIL_STORAGE_CHANNEL
 from utils import get_readable_time
 from database.ia_filterdb import COLLECTIONS
 
@@ -25,7 +25,7 @@ def get_warmup_ui(col_name, processed, total, success, skipped, elapsed, eta, sp
         f"📁 <b>Repository Hub :</b> <code>{col_name.upper()}</code>",
         f"📈 <b>Pipeline Index :</b> <code>{processed:,} / {total:,}</code>",
         f"🔒 <b>Strict Locked  :</b> <code>{success:,} Thumbs</code>",
-        f"⚠️ <b>Rejected Junk  :</b> <code>{skipped:,} Files</code>",
+        f"⚠️ <b>Rejected/Web   :</b> <code>{skipped:,} Files</code>",
         f"⏱️ <b>Time Remaining :</b> <code>{get_readable_time(eta)}</code>",
         f"⚡ <b>Stream Velocity:</b> <code>{speed:.1f} f/min</code>",
         f"──────────────────────────────",
@@ -35,17 +35,19 @@ def get_warmup_ui(col_name, processed, total, success, skipped, elapsed, eta, sp
     return "\n".join(lines)
 
 # ─────────────────────────────────────────────────────────
-# 🧠 CORE ENGINE — Rebuilt With Strict Thumbnail Validation
+# 🧠 CORE ENGINE — Rebuilt With Isolated Storage & Web Protection
 # ─────────────────────────────────────────────────────────
 async def start_warmup_engine(client, status_msg, user_id):
     logger.info(f"⚡ [WARMUP] Strict smart pipeline triggered by admin: {user_id}")
 
-    # ✅ फिक्स 1: मोंगोडीबी कम्पेल्ड टेक्स्ट क्वेरी (silently fail होने से सुरक्षा)
+    # ✅ सुरक्षा पैच: सिर्फ उन्हीं फाइलों को उठाएं जिनमें कर्सर 'TG_ID:' से न शुरू हो, 'NO_THUMB' न हो,
+    # और जो आपके द्वारा वेबसाइट डैशबोर्ड से चेंज ("thumb_source": "web") न की गई हों!
     query = {
         "thumb_url": {
             "$not": re.compile(r"^TG_ID:"),
             "$ne": "NO_THUMB"
-        }
+        },
+        "thumb_source": {"$ne": "web"} # 🛡️ वेब थंबनेल प्रोटेक्शन गार्ड एक्टिवेटेड!
     }
 
     # पेंडिंग काउंट्स सिंक फेज
@@ -60,7 +62,7 @@ async def start_warmup_engine(client, status_msg, user_id):
         return await status_msg.edit(
             "✨ <b>FAST FINDER DATABASE STATUS</b>\n\n"
             "🎉 <code>Everything is up to date!</code>\n"
-            "All files inside your library collections already possess verified active thumbnail cache locks."
+            "All files inside your library collections already possess verified active thumbnail cache locks or customized web posters."
         )
 
     await status_msg.edit(
@@ -76,11 +78,11 @@ async def start_warmup_engine(client, status_msg, user_id):
             continue
 
         logger.info(f"📁 [WARMUP] Running secure loop over: {col_name.upper()}")
-        cursor = collection.find(query, {"_id": 1, "file_ref": 1, "file_id": 1, "file_name": 1})
+        cursor = collection.find(query, {"_id": 1, "file_ref": 1, "file_id": 1, "file_name": 1, "thumb_url": 1})
 
         try:
             async for doc in cursor:
-                # ✅ फिक्स 2: पुरानी फाइलों के लिए '_id' बैकअप सपोर्ट (ताकि पुरानी 62k फाइलें मिस न हों)
+                # पुरानी फाइलों के लिए '_id' बैकअप सपोर्ट
                 fid = doc.get("file_ref") or doc.get("file_id") or doc.get("_id")
                 if not fid:
                     skipped += 1
@@ -91,6 +93,7 @@ async def start_warmup_engine(client, status_msg, user_id):
                 msg = None  
 
                 try:
+                    # फाइल का वीडियो/डॉक्यूमेंट कैश टेलीग्राम से फेच करना
                     msg = await client.send_cached_media(chat_id=BIN_CHANNEL, file_id=fid)
                     thumb_id = None
 
@@ -106,16 +109,35 @@ async def start_warmup_engine(client, status_msg, user_id):
                         and len(thumb_id.strip()) > 20
                         and "NO_THUMB" not in thumb_id
                     ):
-                        db_val = f"TG_ID:{thumb_id}"
-                        res = await collection.update_one(
-                            {"_id": doc["_id"]},
-                            {"$set": {"thumb_url": db_val}}
-                        )
-                        if res.modified_count:
-                            success += 1
-                            print(f"💾 [LOCKED] ({processed}/{total_to_process}) ✅ {file_label}", flush=True)
+                        # ⚡ [NEW INFRASTRUCTURE TUNNEL]
+                        # डाउनलोड-ओनली एरर से बचने के लिए इसे इन-मेमोरी डाउनलोड करके नए थंबनेल स्टोरेज चैनल पर भेजेंगे
+                        thumb_buffer = await client.download_media(thumb_id, in_memory=True)
+                        
+                        if thumb_buffer:
+                            thumb_buffer.seek(0)
+                            # सीधे आपके नए पृथक थंबनेल स्टोरेज चैनल पर फ्रेश अपलोड
+                            up_msg = await client.send_photo(chat_id=THUMBNAIL_STORAGE_CHANNEL, photo=thumb_buffer)
+                            
+                            if up_msg and up_msg.photo:
+                                new_t_id = up_msg.photo.sizes[-1].file_id if hasattr(up_msg.photo, "sizes") and up_msg.photo.sizes else up_msg.photo.file_id
+                                
+                                if new_t_id:
+                                    db_val = f"TG_ID:{new_t_id}"
+                                    res = await collection.update_one(
+                                        {"_id": doc["_id"]},
+                                        {"$set": {"thumb_url": db_val, "is_thumb_permanent": True}} # मोंगोडीबी में परमानेंट लॉक सेट
+                                    )
+                                    if res.modified_count:
+                                        success += 1
+                                        print(f"💾 [LOCKED] ({processed}/{total_to_process}) ✅ {file_label}", flush=True)
+                                else:
+                                    skipped += 1
+                            else:
+                                skipped += 1
+                        else:
+                            skipped += 1
                     else:
-                        # ✅ फिक्स 3: बिना थंबनेल वाली फाइलों को 'NO_THUMB' मार्क करना ताकि बार-बार फालतू लूप न चले
+                        # बिना थंबनेल वाली फाइलों को 'NO_THUMB' मार्क करना ताकि बार-बार फालतू लूप न चले
                         await collection.update_one(
                             {"_id": doc["_id"]},
                             {"$set": {"thumb_url": "NO_THUMB"}}
@@ -123,15 +145,13 @@ async def start_warmup_engine(client, status_msg, user_id):
                         skipped += 1
                         print(f"🚫 [NO POSTER] Marked NO_THUMB in DB: {file_label}", flush=True)
 
-                    # Message delete — background execution (Non-blocking Speed Booster)
                     if msg:
                         asyncio.ensure_future(_safe_delete(msg))
 
-                    # ✅ फिक्स 4: आपका सुझाया हुआ 1.2 से 3.0 सेकंड का शुद्ध रैंडम गैप
+                    # ⏱️ 1.2 से 3.0 सेकंड का शुद्ध रैंडम एंटी-फ्लड गैप
                     await asyncio.sleep(random.uniform(1.2, 3.0))
 
                 except FloodWait as e:
-                    # ⚠️ रेट लिमिट आने पर डेटाबेस में NO_THUMB अपडेट नहीं होगा (डेटा 100% सेफ)
                     if msg:
                         asyncio.ensure_future(_safe_delete(msg))
 
@@ -148,7 +168,7 @@ async def start_warmup_engine(client, status_msg, user_id):
                     await asyncio.sleep(wait_sec)
 
                 except BadRequest:
-                    # टूटी हुई या डिलीटेड फाइलों को भी 'NO_THUMB' मार्क करें ताकि कर्सर स्टक न हो
+                    # टूटी हुई या डिलीटेड फाइलों को 'NO_THUMB' मार्क करें
                     await collection.update_one(
                         {"_id": doc["_id"]},
                         {"$set": {"thumb_url": "NO_THUMB"}}
@@ -189,9 +209,9 @@ async def start_warmup_engine(client, status_msg, user_id):
         f"──────────────────────────────\n\n"
         f"🎯 <b>Total Scanned Docs:</b> <code>{processed:,}</code>\n"
         f"🔒 <b>Verified Valid Locked:</b> <code>{success:,} Images</code>\n"
-        f"⚠️ <b>Rejected / No Poster:</b> <code>{skipped:,} Files</code>\n"
+        f"⚠️ <b>Skipped / Web Custom:</b> <code>{skipped:,} Files</code>\n"
         f"🕐 <b>Total Processing Time:</b> <code>{get_readable_time(total_elapsed)}</code>\n\n"
-        f"⚡ <i>Web app, Mini App & streaming players will load instantly with original posters!</i>"
+        f"⚡ <i>Web app, Mini App & streaming players will load instantly with original posters from isolated storage channel!</i>"
     )
     try:
         await status_msg.reply(final_report)
