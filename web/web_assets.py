@@ -10,6 +10,16 @@ CSS = """
 .fc-poster{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 0.25s ease-in-out, transform 0.35s ease}
 .fc-poster.loaded{opacity:1}
 .fc-content{padding:15px;display:flex;flex-direction:column;flex:1}.fc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.source-badge{font-size:10px;font-weight:900;padding:2px 6px;border-radius:2px;border:1px solid}.source-badge.primary{color:var(--accent);border-color:var(--accent)}.source-badge.cloud{color:#3399ff;border-color:#3399ff}.source-badge.archive{color:var(--muted);border-color:var(--muted)}.type-tag{font-size:12px;font-weight:700;color:var(--muted)}.fc-name{font-size:15px;font-weight:700;margin-bottom:5px;word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}.fc-meta{font-size:12px;color:var(--muted);margin-bottom:15px}.fc-actions{margin-top:auto;display:flex;flex-direction:column;gap:8px}.btn-play{background:#fff;color:#141414;padding:10px;border-radius:4px;font-weight:900;text-decoration:none;text-align:center;display:block;transition:.2s}.btn-play:hover{background:#e6e6e6}.empty{text-align:center;padding:80px 20px;color:var(--muted);grid-column:1/-1}.empty-icon{font-size:40px;margin-bottom:15px}.pagination{display:none;justify-content:center;gap:15px;padding:30px 0;align-items:center}.pg-btn{background:var(--bg3);border:0;color:var(--text);padding:10px 20px;border-radius:4px;font-weight:700;cursor:pointer}.pg-btn:disabled{opacity:.3}.toast{position:fixed;bottom:20px;right:20px;background:var(--accent);color:#fff;padding:12px 20px;border-radius:4px;font-weight:700;z-index:300;transform:translateX(150%);transition:.3s}.toast.show{transform:translateX(0)}.toast.error{background:#000;border:1px solid var(--accent)}.login-bg{background:linear-gradient(rgba(0,0,0,.8) 0,rgba(0,0,0,.4) 50%,rgba(0,0,0,.8) 100%),url('https://assets.nflxext.com/ffe/siteui/vlv3/f841d4c7-10e1-40af-bcae-07a3f8dc141a/f6d7434e-d6de-4185-a6d4-c77a2d08737b/IN-en-20220502-popsignuptwoweeks-perspective_alpha_website_medium.jpg') center/cover;background-attachment:fixed;min-height:100vh;display:flex;flex-direction:column}.light .login-bg{background:linear-gradient(rgba(255,255,255,.85) 0,rgba(255,255,255,.6) 50%,rgba(255,255,255,.9) 100%),url('https://assets.nflxext.com/ffe/siteui/vlv3/f841d4c7-10e1-40af-bcae-07a3f8dc141a/f6d7434e-d6de-4185-a6d4-c77a2d08737b/IN-en-20220502-popsignuptwoweeks-perspective_alpha_website_medium.jpg') center/cover;background-attachment:fixed}.login-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:20px;min-height:calc(100vh - 68px)}.login-card{background:var(--card);padding:50px;border-radius:12px;width:100%;max-width:450px;box-shadow:0 15px 40px rgba(0,0,0,.3);border:1px solid var(--border)}.login-card h2{font-size:32px;margin-bottom:28px;color:var(--text)}.login-card input{width:100%;background:var(--bg);border:1px solid var(--border);padding:16px;color:var(--text);margin-bottom:16px;border-radius:6px;outline:none}.login-card input:focus{border-color:var(--accent)}.login-card .submit-btn{width:100%;background:var(--accent);color:#fff;border:0;padding:16px;font-weight:700;margin-top:24px;border-radius:6px;cursor:pointer}.err-box{background:#e87c03;color:#fff;padding:10px 20px;border-radius:4px;margin-bottom:16px}.success-box{background:#28a745;color:#fff;padding:10px 20px;border-radius:4px;margin-bottom:16px}.big-stat{background:var(--card);padding:40px 20px;border-radius:4px;text-align:center;margin-bottom:30px}.big-stat-val{font-size:64px;font-weight:900;color:var(--accent);margin-bottom:10px}.big-stat-label{font-size:16px;color:var(--muted);font-weight:700;letter-spacing:2px}.edit-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:.2s;overflow-y:auto;padding:20px 10px}.edit-modal.open{opacity:1;pointer-events:all}.em-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:25px;width:100%;max-width:480px;box-shadow:0 10px 30px rgba(0,0,0,.5);position:relative;margin:auto}.em-close{position:absolute;top:15px;right:20px;background:0 0;border:0;color:var(--muted);font-size:24px;cursor:pointer;z-index:10}.em-title{font-size:18px;font-weight:700;margin-bottom:20px;display:flex;align-items:center;gap:8px}.em-input{width:100%;background:var(--bg);border:1px solid var(--border);padding:12px;color:var(--text);margin-bottom:15px;border-radius:6px;outline:none;font-size:14px}.em-input:focus{border-color:var(--accent)}.thumb-preview-box{width:100%;aspect-ratio:16/9;background:var(--bg3);border:1px solid var(--border);border-radius:6px;margin-bottom:15px;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center}.t-prev-img{max-width:100%;max-height:100%;object-fit:contain}.em-upload-btn{display:block;text-align:center;background:var(--bg4);border:1px dashed var(--border);padding:12px;border-radius:6px;cursor:pointer;font-weight:700;font-size:13px;margin-bottom:20px;transition:0.2s}.em-upload-btn:hover{background:var(--bg3);border-color:var(--text)}.em-save-btn{width:100%;background:var(--accent);color:#fff;border:0;padding:14px;font-weight:700;border-radius:6px;cursor:pointer;font-size:15px;transition:0.2s}.em-save-btn:hover{background:var(--accent-hover)}.em-save-btn:disabled{opacity:.5;cursor:not-allowed}.cropper-container-box{width:100%;aspect-ratio:16/9;margin-bottom:15px;border-radius:6px;overflow:hidden;display:none;background:#000}.cropper-view-box{box-outline:none;outline:2px solid var(--accent)!important;outline-color:var(--accent)!important}.cropper-line,.cropper-point{background-color:var(--accent)!important;opacity:0.8}.cropper-bg{background-image:none!important;background-color:#000!important}.cropper-modal{opacity:.8!important;background-color:#000!important}
+/* --- Global Admin Edit Buttons --- */
+.poster-admin{position:absolute;bottom:0;left:0;right:0;display:flex;gap:6px;padding:7px 8px;opacity:0;transform:translateY(8px);transition:opacity .2s ease,transform .22s ease;pointer-events:none;z-index:4}
+.file-card.admin-active .poster-admin{opacity:1;transform:translateY(0);pointer-events:all}
+.text-admin-row{display:none;gap:5px;padding:5px 11px 0}
+.file-card.admin-active .text-admin-row{display:flex}
+.btn-edit,.btn-del{flex:1;padding:6px 0;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;transition:background .12s,transform .1s;border:none}
+.btn-edit{background:rgba(42,42,48,.90);backdrop-filter:blur(10px);color:#fff;border:1px solid rgba(255,255,255,.18)}
+.btn-edit:hover{background:rgba(80,80,88,.95)}
+.btn-del{background:rgba(160,8,8,.78);backdrop-filter:blur(10px);color:#fff;border:1px solid rgba(229,9,20,.45)}
+.btn-del:hover{background:rgba(229,9,20,.92)}
 """
 
 JS = """
@@ -67,6 +77,116 @@ async function triggerCacheFlush() {
         if (btn) { btn.innerText = "🧹 Flush RAM Cache"; btn.disabled = false; }
     }
 }
+
+// --- Universal Admin Edit/Delete Pipeline ---
+var _tt;
+function showToast(m,t){
+    t=t||'success';
+    var x=document.getElementById('toast');
+    if(!x){x=document.createElement('div');x.id='toast';x.className='toast';document.body.appendChild(x);}
+    x.textContent=m;x.className='toast '+t+' show';
+    clearTimeout(_tt);
+    _tt=setTimeout(function(){x.classList.remove('show');},3000);
+}
+
+function toggleAdminBtns(card,e){
+    e.stopPropagation();
+    var isActive=card.classList.contains('admin-active');
+    document.querySelectorAll('.file-card.admin-active').forEach(function(c){c.classList.remove('admin-active');});
+    if(!isActive) card.classList.add('admin-active');
+}
+
+document.addEventListener('click',function(){
+    document.querySelectorAll('.file-card.admin-active').forEach(function(c){c.classList.remove('admin-active');});
+});
+
+async function deleteFile(fid,col){
+    if(!confirm('Are you sure you want to delete this file?'))return;
+    try{
+        var r=await fetch('/api/delete',{method:'POST',body:JSON.stringify({file_id:fid,collection:col}),headers:{'Content-Type':'application/json'}});
+        var res=await r.json();
+        if(res.success){ showToast('✅ File deleted successfully!'); refreshGridAfterEdit(); }
+        else{ showToast(res.error||'Delete failed!','error'); }
+    }catch(e){showToast('Delete failed','error');}
+}
+
+function editFile(fid, col, encName, encCaption){
+    var currentName = decodeURIComponent(encName);
+    var currentCaption = (encCaption && encCaption !== 'undefined') ? decodeURIComponent(encCaption) : '';
+    activeFid = fid; activeCol = col;
+    if(cropperInstance){cropperInstance.destroy();cropperInstance=null;}
+    document.getElementById('emName').value=currentName;
+    document.getElementById('emFile').value='';
+    document.getElementById('cropContainer').style.display='none';
+    if(document.getElementById('emMoveCol')) document.getElementById('emMoveCol').value = col;
+    if(document.getElementById('emAddCaption')) document.getElementById('emAddCaption').value = currentCaption;
+    
+    var prevBox=document.getElementById('emPreviewBox');
+    prevBox.style.display='flex';
+    prevBox.innerHTML='<img src="/api/thumb?file_id='+fid+'&col='+activeCol+'" class="t-prev-img" onerror="this.src=\\'https://placehold.co/600x338/181818/FFF?text=No+Thumbnail\\';">';
+    document.getElementById('editCombinedModal').classList.add('open');
+}
+
+function closeCombinedModal(){
+    document.getElementById('editCombinedModal').classList.remove('open');
+    if(cropperInstance){cropperInstance.destroy();cropperInstance=null;}
+}
+
+function handleLocalPreview(input){
+    if(input.files&&input.files[0]){
+        var reader=new FileReader();
+        reader.onload=function(e){
+            if(cropperInstance) cropperInstance.destroy();
+            document.getElementById('emPreviewBox').style.display='none';
+            var cropWrap=document.getElementById('cropContainer');
+            cropWrap.style.display='block';
+            cropWrap.innerHTML='<img id="cropImage" src="'+e.target.result+'" style="max-width:100%;">';
+            var img=document.getElementById('cropImage');
+            cropperInstance=new Cropper(img,{aspectRatio:16/9,viewMode:1,background:false,zoomable:true,movable:true});
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+async function saveAllChanges(){
+    var newName=document.getElementById('emName').value.trim();
+    var addCaption=document.getElementById('emAddCaption') ? document.getElementById('emAddCaption').value.trim() : '';
+    var moveCol=document.getElementById('emMoveCol') ? document.getElementById('emMoveCol').value : activeCol;
+    if(!newName){showToast('File name cannot be empty!','error');return;}
+    
+    var btn=document.getElementById('emSaveBtn');
+    btn.disabled=true; btn.innerText='Processing...';
+    try{
+        if(cropperInstance){
+            showToast('✂️ Cropping & Uploading...');
+            var canvas=cropperInstance.getCroppedCanvas({width:1280,height:720,imageSmoothingEnabled:true,imageSmoothingQuality:'high'});
+            var blob=await new Promise(r=>canvas.toBlob(r,'image/jpeg',0.9));
+            if(blob){
+                var fd=new FormData(); fd.append('file_id',activeFid); fd.append('collection',activeCol); fd.append('image',blob,'cropped.jpg');
+                var upRes=await fetch('/api/upload_thumb',{method:'POST',body:fd});
+                var upData=await upRes.json();
+                if(!upData.success){showToast('Upload failed!','error'); btn.disabled=false; btn.innerText='Save Changes'; return;}
+            }
+        }
+        var payload = { file_id: activeFid, collection: activeCol, new_name: newName, add_caption: addCaption, target_collection: moveCol };
+        var r=await fetch('/api/edit_name',{method:'POST',body:JSON.stringify(payload),headers:{'Content-Type':'application/json'}});
+        var res=await r.json();
+        
+        if(res.success||cropperInstance){
+            showToast('✨ File updated successfully!');
+            closeCombinedModal();
+            refreshGridAfterEdit();
+        } else showToast(res.error||'Update failed!','error');
+    }catch(e){showToast('Network Error','error');}
+    finally{btn.disabled=false; btn.innerText='Save Changes';}
+}
+
+// यह ब्रिज फंक्शन पता लगाएगा कि आप किस पेज पर हैं और उसी हिसाब से ग्रिड रिफ्रेश करेगा
+function refreshGridAfterEdit() {
+    if (typeof doSearch === 'function') doSearch(curOff);
+    else if (typeof triggerActorSearchAjax === 'function') triggerActorSearchAjax();
+    else window.location.reload();
+}
 """.replace("__LIMIT_PLACEHOLDER__", str(MAX_WEB_RESULTS))
 
 def _h(html): return web.Response(text=html.encode('utf-8','replace').decode('utf-8'), content_type='text/html', charset='utf-8')
@@ -94,7 +214,7 @@ def build_page(title, body, cls="", active_tab="", role=None):
     if role: nav = f'<div class="sidebar-overlay" id="sbOverlay" onclick="closeSidebar()"></div><div class="sidebar" id="sidebar"><div class="sb-header"><div class="sb-logo"><span class="nf-icon">F</span> FAST FINDER</div><button class="sb-close" onclick="closeSidebar()">&#10005;</button></div><nav class="sb-nav"><div class="sb-section">Menu</div>{nav_links}</nav><div class="sb-footer"><a href="/logout" class="sb-logout">Sign Out</a></div></div><div class="topbar"><button class="ham-btn" id="hamBtn" onclick="openSidebar()"><span class="ham-line"></span><span class="ham-line"></span><span class="ham-line"></span></button><a class="logo" href="/dashboard"><span class="nf-icon">F</span> FAST FINDER</a><div class="topbar-right"><button class="theme-btn" onclick="toggleThemeFixed()">Theme</button></div></div>'
     else: nav = '<div class="topbar" style="position:absolute; width:100%; box-shadow:none; background:transparent;"><a class="logo" href="/" style="font-size:24px"><span class="nf-icon" style="font-size:24px">F</span> FAST FINDER</a><div class="topbar-right"><button class="theme-btn" onclick="toggleThemeFixed()">Theme</button></div></div>'
 
-    # ✅ NATIVE HTML UPDATE: मैंने आपके नए फीचर्स (Transfer और Caption) को यहाँ स्थायी रूप से जोड़ दिया है
+    # ✅ NATIVE HTML UPDATE: मैंने आपके नए फीचर्स (Transfer और Caption) को यहाँ स्थायी रूप से जोड़ दिया है
     modals = """
     <div class="edit-modal" id="editCombinedModal" onclick="if(event.target===this)closeCombinedModal()">
         <div class="em-card">
